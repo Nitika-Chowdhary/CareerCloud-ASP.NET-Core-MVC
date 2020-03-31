@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using CareerCloud.EntityFrameworkDataAccess;
 using CareerCloud.Pocos;
+using CareerCloud.MVC.Models;
 
 namespace CareerCloud.MVC.Controllers
 {
@@ -20,10 +21,29 @@ namespace CareerCloud.MVC.Controllers
         }
 
         // GET: CompanyJobs
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(Guid? company, Guid? id)
         {
-            var careerCloudContext = _context.CompanyJobs.Include(c => c.CompanyProfilePoco);
-            return View(await careerCloudContext.ToListAsync());
+            if (company is null)
+            {
+                var careerCloudContext = await _context.CompanyJobs.Where(c => c.Id == id).ToListAsync();
+                if (careerCloudContext.Count() == 0)
+                {
+                    ViewData["Company"] = id;
+                    return View("~/Views/CompanyJobs/AddNewJob.cshtml");
+                }
+                return View(careerCloudContext);
+            }
+            if (id is null)
+            {
+                var careerCloudContext1 = await _context.CompanyJobs.Where(c => c.Company == company).ToListAsync();
+                if (careerCloudContext1.Count() == 0)
+                {
+                    ViewData["Company"] = company;
+                    return View("~/Views/CompanyJobs/AddNewJob.cshtml");
+                }
+                return View(careerCloudContext1);
+            }
+            return View(await _context.CompanyJobs.ToListAsync());
         }
 
         // GET: CompanyJobs/Details/5
@@ -51,6 +71,53 @@ namespace CareerCloud.MVC.Controllers
             ViewData["Company"] = new SelectList(_context.CompanyProfiles, "Id", "Id");
             return View();
         }
+
+        public async Task<IActionResult> ApplyJobs(Guid applicant)
+        {
+            List<CompanyJobPoco> companyJobs = await _context.CompanyJobs.ToListAsync();
+            List<JobViewModel> jobViewModels = new List<JobViewModel>();
+            foreach (CompanyJobPoco item in companyJobs)
+            {
+                CompanyJobDescriptionPoco poco = _context.CompanyJobDescriptions.Where(c => c.Job == item.Id).FirstOrDefault();
+                JobViewModel jobViewModel = new JobViewModel();
+                jobViewModel.companyJob = item;
+                jobViewModel.companyJobDescription = poco;
+                if (poco is null)
+                {
+                    continue;
+                }
+                jobViewModels.Add(jobViewModel);
+            }
+
+            ViewData["Applicant"] = applicant;
+            ViewData["JobName"] = jobViewModels
+                .Select(i => new SelectListItem()
+                {
+                    Text = i.companyJobDescription is null ? "" : (i.companyJobDescription.JobName + " -- " + i.companyJobDescription.JobDescriptions.Substring(0, i.companyJobDescription.JobDescriptions.Length > 36 ? 35 : i.companyJobDescription.JobDescriptions.Length)),
+                    Value = i.companyJob.Id.ToString()
+                });
+            ViewData["aaa"] = ViewData["JobName"];
+            return View();
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ApplyNewJob([Bind("Id,Applicant,Job,ApplicationDate")] TempModel tempModel)
+        {
+            if (ModelState.IsValid)
+            {
+                ApplicantJobApplicationPoco applicantJobApplicationPoco = new ApplicantJobApplicationPoco();
+                applicantJobApplicationPoco.Id = Guid.NewGuid();
+                applicantJobApplicationPoco.Applicant = tempModel.Applicant;
+                applicantJobApplicationPoco.Job = Guid.Parse(tempModel.Job);
+                applicantJobApplicationPoco.ApplicationDate = tempModel.ApplicationDate;
+                _context.Add(applicantJobApplicationPoco);
+                await _context.SaveChangesAsync();
+                return RedirectToAction(nameof(Index));
+            }
+            return RedirectToAction(nameof(Index));
+        }
+
 
         // POST: CompanyJobs/Create
         // To protect from overposting attacks, please enable the specific properties you want to bind to, for 

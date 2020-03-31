@@ -20,10 +20,22 @@ namespace CareerCloud.MVC.Controllers
         }
 
         // GET: ApplicantJobApplications
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(Guid? applicant)
         {
-            var careerCloudContext = _context.ApplicantJobApplications.Include(a => a.ApplicantProfilePoco).Include(a => a.CompanyJobPoco);
-            return View(await careerCloudContext.ToListAsync());
+            if (applicant is null)
+            {
+                var careerCloudContext = _context.ApplicantJobApplications
+                .Include(a => a.ApplicantProfilePoco)
+                .Include(a => a.CompanyJobPoco);
+                return View(await careerCloudContext.ToListAsync());
+            }
+            var careerCloudContext1 = _context.ApplicantJobApplications.Where(a => a.Applicant == applicant)
+                .Include(a => a.ApplicantProfilePoco)
+                .Include(a => a.CompanyJobPoco)
+                    .ThenInclude(a => a.CompanyJobDescriptionPocos)
+                .Include(a => a.CompanyJobPoco)
+                    .ThenInclude(a => a.CompanyProfilePoco);
+            return View(await careerCloudContext1.ToListAsync());
         }
 
         // GET: ApplicantJobApplications/Details/5

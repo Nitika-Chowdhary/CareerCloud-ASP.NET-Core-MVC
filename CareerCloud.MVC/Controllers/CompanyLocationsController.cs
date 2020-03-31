@@ -20,9 +20,15 @@ namespace CareerCloud.MVC.Controllers
         }
 
         // GET: CompanyLocations
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(Guid? id)
         {
-            var careerCloudContext = _context.CompanyLocations.Include(c => c.CompanyProfilePoco);
+            var careerCloudContext = _context.CompanyLocations
+                .Where(c => c.Company == id);
+            if(careerCloudContext.Count() == 0)
+            {
+                ViewData["Company"] = id;
+                return View("~/Views/CompanyLocations/AddNewLocation.cshtml");
+            }
             return View(await careerCloudContext.ToListAsync());
         }
 

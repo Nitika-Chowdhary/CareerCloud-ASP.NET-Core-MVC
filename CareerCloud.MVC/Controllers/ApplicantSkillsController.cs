@@ -22,13 +22,16 @@ namespace CareerCloud.MVC.Controllers
         // GET: ApplicantSkills
         public async Task<IActionResult> Index(Guid? id)
         {
-            if (id == null)
-                return BadRequest();
+            //if (id == null)
+            //    return BadRequest();
 
             var careerCloudContext = _context.ApplicantSkills.Where(a => a.Applicant == id);
             if (careerCloudContext.Count() == 0)
-                return NotFound();
-
+            {
+                ViewData["Applicant"] = id;
+                return View("~/Views/ApplicantSkills/AddNewSkill.cshtml");
+            }
+                
             return View(await careerCloudContext.ToListAsync());
         }
 
@@ -70,11 +73,13 @@ namespace CareerCloud.MVC.Controllers
                 applicantSkillPoco.Id = Guid.NewGuid();
                 _context.Add(applicantSkillPoco);
                 await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+                return RedirectToAction(nameof(Index), "ApplicantProfiles", new { id = applicantSkillPoco.Applicant });
             }
             ViewData["Applicant"] = new SelectList(_context.ApplicantProfiles, "Id", "Id", applicantSkillPoco.Applicant);
             return View(applicantSkillPoco);
         }
+
+        
 
         // GET: ApplicantSkills/Edit/5
         public async Task<IActionResult> Edit(Guid? id)

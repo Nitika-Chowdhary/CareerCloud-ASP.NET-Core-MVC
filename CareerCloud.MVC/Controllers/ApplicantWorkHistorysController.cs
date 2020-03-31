@@ -22,12 +22,16 @@ namespace CareerCloud.MVC.Controllers
         // GET: ApplicantWorkHistorys
         public async Task<IActionResult> Index(Guid? id)
         {
-            if (id == null)
-                return BadRequest();
+            //if (id == null)
+            //    return BadRequest();
 
             var careerCloudContext = _context.ApplicantWorkHistorys.Where(a => a.Applicant == id);
             if (careerCloudContext.Count() == 0)
-                return NotFound();
+            {
+                ViewData["CountryCode"] = new SelectList(_context.SystemCountryCodes, "Code", "Code");
+                ViewData["Applicant"] = id;
+                return View("~/Views/ApplicantWorkHistorys/AddNewWorkHistory.cshtml");
+            }                
 
             return View(await careerCloudContext.ToListAsync());
         }
@@ -72,7 +76,7 @@ namespace CareerCloud.MVC.Controllers
                 applicantWorkHistoryPoco.Id = Guid.NewGuid();
                 _context.Add(applicantWorkHistoryPoco);
                 await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+                return RedirectToAction(nameof(Index), "ApplicantProfiles", new { id = applicantWorkHistoryPoco.Applicant });
             }
             ViewData["Applicant"] = new SelectList(_context.ApplicantProfiles, "Id", "Id", applicantWorkHistoryPoco.Applicant);
             ViewData["CountryCode"] = new SelectList(_context.SystemCountryCodes, "Code", "Code", applicantWorkHistoryPoco.CountryCode);

@@ -1,10 +1,7 @@
 ﻿@model IEnumerable<CareerCloud.Pocos.ApplicantProfilePoco>
 
-@{
-    ViewData["Title"] = "Index";
-}
 
-<h1>Index</h1>
+<h1>Applicant's Profile</h1>
 
 <p>
     <a asp-action="Create">Create New</a>
@@ -72,15 +69,17 @@
             <td>
                 @Html.DisplayFor(modelItem => item.SystemCountryCodePoco.Code)
             </td>*@
-            <td>
-                <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
-                <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
-                <a asp-action="Delete" asp-route-id="@item.Id">Delete</a> |
-                <a asp-controller="ApplicantSkills" asp-action="Index" asp-route-id="@item.Id">Skills</a> |
-                <a asp-controller="ApplicantResumes" asp-action="Index" asp-route-id="@item.Id">Resumes</a> |
-                <a asp-controller="ApplicantEducations" asp-action="Index" asp-route-id="@item.Id">Education</a> |
-                <a asp-controller="ApplicantWorkHistorys" asp-action="Index" asp-route-id="@item.Id">Work History</a>
-            </td>
+        <td>
+            <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
+            <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
+            <a asp-action="Delete" asp-route-id="@item.Id">Delete</a> |
+            <a asp-controller="ApplicantSkills" asp-action="Index" asp-route-id="@item.Id">Skills</a> |
+            <a asp-controller="ApplicantResumes" asp-action="Index" asp-route-id="@item.Id">Resumes</a> |
+            <a asp-controller="ApplicantEducations" asp-action="Index" asp-route-id="@item.Id">Education</a> |
+            <a asp-controller="ApplicantWorkHistorys" asp-action="Index" asp-route-id="@item.Id">Work History</a> |
+            <a asp-controller="CompanyJobs" asp-action="ApplyJobs" asp-route-applicant="@item.Id">Apply Jobs</a> |
+            <a asp-controller="ApplicantJobApplications" asp-action="Index" asp-route-applicant="@item.Id">Jobs Applied</a>
+        </td>
         </tr>
 }
     </tbody>

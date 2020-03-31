@@ -20,10 +20,32 @@ namespace CareerCloud.MVC.Controllers
         }
 
         // GET: ApplicantProfiles
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(Guid? login, Guid? id)
         {
-            var careerCloudContext = _context.ApplicantProfiles.Include(a => a.SecurityLogin).Include(a => a.SystemCountryCodePoco);
-            return View(await careerCloudContext.ToListAsync());
+            if (login is null)
+            {
+                var careerCloudContext1 = await _context.ApplicantProfiles.Where(a => a.Id == id).ToListAsync();
+                if (careerCloudContext1.Count() == 0)
+                {
+                    ViewData["Country"] = new SelectList(_context.SystemCountryCodes, "Code", "Code");
+                    return View("~/Views/ApplicantProfiles/AddNewProfile.cshtml");
+                }
+                return View(careerCloudContext1);
+            }
+            if (id is null)
+            {
+                var careerCloudContext2 = await _context.ApplicantProfiles.Where(a => a.Login == login).ToListAsync();
+                if (careerCloudContext2.Count() == 0)
+                {
+                    ViewData["Login"] = login;
+                    ViewData["Country"] = new SelectList(_context.SystemCountryCodes, "Code", "Code");
+                    return View("~/Views/ApplicantProfiles/AddNewProfile.cshtml");
+                }
+                return View(careerCloudContext2);
+            }
+            return View();
+
+            
         }
 
         // GET: ApplicantProfiles/Details/5
@@ -63,15 +85,51 @@ namespace CareerCloud.MVC.Controllers
         // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Login,CurrentSalary,CurrentRate,Currency,Country,Province,Street,City,PostalCode")] ApplicantProfilePoco applicantProfilePoco)
+        public async Task<IActionResult> Create([Bind("Login,CurrentSalary,CurrentRate,Currency,Country,Province,Street,City,PostalCode")] ApplicantProfilePoco applicantProfilePoco)
         {
-            if (ModelState.IsValid)
+            try
             {
-                applicantProfilePoco.Id = Guid.NewGuid();
-                _context.Add(applicantProfilePoco);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+                if (ModelState.IsValid)
+                {
+                    applicantProfilePoco.Id = Guid.NewGuid();
+                    _context.Add(applicantProfilePoco);
+                    await _context.SaveChangesAsync();
+                    return RedirectToAction(nameof(Index), new { id = applicantProfilePoco.Id });
+                }
             }
+            catch(DbUpdateException)
+            {
+                ModelState.AddModelError("", "Unable to save changes. " +
+                    "Try again, and if the problem persists. " +
+                    "See your system administrator.");
+            }
+
+            ViewData["Login"] = new SelectList(_context.SecurityLogins, "Id", "Id", applicantProfilePoco.Login);
+            ViewData["Country"] = new SelectList(_context.SystemCountryCodes, "Code", "Code", applicantProfilePoco.Country);
+            return View(applicantProfilePoco);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreateAndNavigate([Bind("Login,CurrentSalary,CurrentRate,Currency,Country,Province,Street,City,PostalCode")] ApplicantProfilePoco applicantProfilePoco)
+        {
+            try
+            {
+                if (ModelState.IsValid)
+                {
+                    applicantProfilePoco.Id = Guid.NewGuid();
+                    _context.Add(applicantProfilePoco);
+                    await _context.SaveChangesAsync();
+                    return RedirectToAction(nameof(Index), "ApplicantSkills", new {id = applicantProfilePoco.Id});
+                }
+            }
+            catch (DbUpdateException)
+            {
+                ModelState.AddModelError("", "Unable to save changes. " +
+                    "Try again, and if the problem persists. " +
+                    "See your system administrator.");
+            }
+
             ViewData["Login"] = new SelectList(_context.SecurityLogins, "Id", "Id", applicantProfilePoco.Login);
             ViewData["Country"] = new SelectList(_context.SystemCountryCodes, "Code", "Code", applicantProfilePoco.Country);
             return View(applicantProfilePoco);
@@ -118,11 +176,13 @@ namespace CareerCloud.MVC.Controllers
                 {
                     if (!ApplicantProfilePocoExists(applicantProfilePoco.Id))
                     {
-                        return NotFound();
+                        ModelState.AddModelError("", "Unable to save changes. " +
+                            "Try again, and if the problem persists, " +
+                            "See your system administrator.");                        
                     }
                     else
                     {
-                        throw;
+                        throw;  
                     }
                 }
                 return RedirectToAction(nameof(Index));
@@ -133,7 +193,7 @@ namespace CareerCloud.MVC.Controllers
         }
 
         // GET: ApplicantProfiles/Delete/5
-        public async Task<IActionResult> Delete(Guid? id)
+        public async Task<IActionResult> Delete(Guid? id, bool? saveChangesError = false)
         {
             if (id == null)
             {
@@ -143,10 +203,18 @@ namespace CareerCloud.MVC.Controllers
             var applicantProfilePoco = await _context.ApplicantProfiles
                 .Include(a => a.SecurityLogin)
                 .Include(a => a.SystemCountryCodePoco)
+                .AsNoTracking()
                 .FirstOrDefaultAsync(m => m.Id == id);
             if (applicantProfilePoco == null)
             {
                 return NotFound();
+            }
+
+            if(saveChangesError.GetValueOrDefault())
+            {
+                ViewData["ErrorMessage"] =
+                    "Delete failed. Try again, and if the problem persists, " +
+                    "contact system administrator.";
             }
 
             return View(applicantProfilePoco);
@@ -157,10 +225,18 @@ namespace CareerCloud.MVC.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(Guid id)
         {
-            var applicantProfilePoco = await _context.ApplicantProfiles.FindAsync(id);
-            _context.ApplicantProfiles.Remove(applicantProfilePoco);
-            await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
+            try {
+
+                ApplicantProfilePoco applicantToDelete = new ApplicantProfilePoco() { Id = id };
+                _context.Entry(applicantToDelete).State = EntityState.Deleted;
+                await _context.SaveChangesAsync();
+                return RedirectToAction(nameof(Index));
+            }
+            
+            catch (DbUpdateException)
+            {
+                return RedirectToAction(nameof(Delete), new { id = id, saveChangesError = true });
+            }
         }
 
         private bool ApplicantProfilePocoExists(Guid id)

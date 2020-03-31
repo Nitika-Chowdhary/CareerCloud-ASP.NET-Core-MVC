@@ -20,9 +20,17 @@ namespace CareerCloud.MVC.Controllers
         }
 
         // GET: CompanyDescriptions
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(Guid? id)
         {
-            var careerCloudContext = _context.CompanyDescriptions.Include(c => c.CompanyProfilePoco).Include(c => c.SystemLanguageCodePoco);
+            var careerCloudContext = _context.CompanyDescriptions
+                .Where(c => c.Company == id);
+                
+            if (careerCloudContext.Count() == 0)
+            {
+                ViewData["Company"] = id;
+                ViewData["LanguageID"] = new SelectList(_context.SystemLanguageCodes, "LanguageID", "LanguageID");
+                return View("~/Views/CompanyDescriptions/AddNewDescription.cshtml");
+            }
             return View(await careerCloudContext.ToListAsync());
         }
 

@@ -20,9 +20,32 @@ namespace CareerCloud.MVC.Controllers
         }
 
         // GET: SecurityLogins
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string sortOrder, string currentFilter, string searchString, int? pageNumber)
         {
-            return View(await _context.SecurityLogins.ToListAsync());
+            ViewData["CurrentOrder"] = sortOrder;
+            
+            if (searchString != null)
+            {
+                pageNumber = 1;
+            }
+            else
+            {
+                searchString = currentFilter;
+            }
+            ViewData["Filter"] = searchString;            
+            List<SecurityLoginPoco> securityLoginPocos = await _context.SecurityLogins.ToListAsync();
+            if (!String.IsNullOrEmpty(searchString))
+            {
+                securityLoginPocos = securityLoginPocos
+                    .Where(s => s.FullName.Contains(searchString)).ToList();
+            }
+            if (ViewData["CurrentOrder"] is "name_desc")
+            {
+                securityLoginPocos = securityLoginPocos.OrderBy(o => o.FullName).ToList();
+            }
+            ViewData["NameSortParm"] = String.IsNullOrEmpty(sortOrder) ? "name_desc" : "";
+            int pageSize = 3;
+            return View(PaginatedList<SecurityLoginPoco>.Create(securityLoginPocos, pageNumber ?? 1, pageSize));
         }
 
         // GET: SecurityLogins/Details/5

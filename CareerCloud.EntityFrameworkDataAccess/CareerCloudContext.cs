@@ -26,6 +26,7 @@ namespace CareerCloud.EntityFrameworkDataAccess
         public DbSet<CompanyJobSkillPoco> CompanyJobSkills { get; set; }
         public DbSet<CompanyLocationPoco> CompanyLocations { get; set; }
         public DbSet<CompanyProfilePoco> CompanyProfiles { get; set; }
+        public DbSet<CompanyJobDescriptionPoco> CompanyJobDescriptions { get; set; }
         public DbSet<SecurityLoginPoco> SecurityLogins { get; set; }
         public DbSet<SecurityLoginsLogPoco> SecurityLoginsLogs { get; set; }
         public DbSet<SecurityLoginsRolePoco> SecurityLoginsRolePoco { get; set; }
